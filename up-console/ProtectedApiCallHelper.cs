@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace up_console
@@ -36,34 +37,42 @@ namespace up_console
         /// <param name="processResult">Callback used to process the result of the call to the web API</param>
         public async Task CallWebApiAndProcessResultAsync(string webApiUrl, string accessToken, Action<JObject> processResult)
             {
+            string json = string.Empty;
+
             if (!string.IsNullOrEmpty(accessToken))
                 {
                 var defaultRequestHeaders = HttpClient.DefaultRequestHeaders;
-                if (defaultRequestHeaders.Accept == null || !defaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json"))
+                if (defaultRequestHeaders.Accept == null || !defaultRequestHeaders.Accept.Any(m => string.Compare(m.MediaType, "application/json", StringComparison.Ordinal) == 0))
                     {
                     HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     }
                 defaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", accessToken);
 
-                HttpResponseMessage response = await HttpClient.GetAsync(webApiUrl);
+                HttpResponseMessage response = await HttpClient.GetAsync(webApiUrl).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
                     {
                     try
                         {
-                        string json = await response.Content.ReadAsStringAsync();
+                        byte[] docBytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                        json = Encoding.UTF8.GetString(docBytes);
+
                         JObject result = JsonConvert.DeserializeObject(json) as JObject;
                         Console.ForegroundColor = ConsoleColor.Gray;
                         processResult(result);
                         }
-                    catch
+                    catch (Exception ex)
                         {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Exception:{ex.Message}");
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.WriteLine($"json:{json}");
                         }
 
                     }
                 else
                     {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    string content = await response.Content.ReadAsStringAsync();
+                    string content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     if (!content.Contains("Resource 'manager' does not exist"))
                         {

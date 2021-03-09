@@ -54,7 +54,7 @@ namespace up_console
                 again = false;
                 try
                     {
-                    await DisplayMeAndMyManagerAsync();
+                    await DisplayMeAndMyManagerAsync().ConfigureAwait(false);
                     }
                 catch (ArgumentException ex) when (ex.Message.StartsWith("U/P"))
                     {
@@ -130,7 +130,7 @@ namespace up_console
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine(title);
             Console.ResetColor();
-            await protectedApiCallHelper.CallWebApiAndProcessResultAsync(url, accessToken, Display);
+            await protectedApiCallHelper.CallWebApiAndProcessResultAsync(url, accessToken, Display).ConfigureAwait(false);
             Console.WriteLine();
             }
 
